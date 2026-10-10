@@ -4,6 +4,7 @@ import {
   FeatureWidget,
   InsightWidget,
   SalesReportWidget,
+  StatWidget,
   WeatherWidget,
 } from "@/components/widgets"
 
@@ -17,6 +18,7 @@ export default function App() {
         <FeatureWidget />
         <ActivityWidget />
         <WeatherWidget />
+        <StatWidget />
       </div>
     </main>
   )
