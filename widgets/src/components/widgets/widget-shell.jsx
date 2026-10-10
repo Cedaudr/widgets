@@ -33,7 +33,7 @@ export function MoreButton({ onClick }) {
 }
 
 // Clickable dash pager. Auto-advances every `interval` ms (0 disables); a click restarts the timer.
-export function Pager({ count, active, onChange, interval = 4000 }) {
+export function Pager({ count, active, onChange, interval = 4000, vertical = false }) {
   useEffect(() => {
     if (!interval || count < 2) return
     const id = setTimeout(() => onChange((active + 1) % count), interval)
@@ -41,7 +41,7 @@ export function Pager({ count, active, onChange, interval = 4000 }) {
   }, [active, count, interval, onChange])
 
   return (
-    <div className="flex gap-5">
+    <div className={vertical ? "flex flex-col items-center gap-2.5" : "flex gap-5"}>
       {Array.from({ length: count }, (_, i) => (
         <button
           key={i}
@@ -49,8 +49,12 @@ export function Pager({ count, active, onChange, interval = 4000 }) {
           aria-current={i === active}
           onClick={() => onChange(i)}
           className={cn(
-            "h-1 flex-1 rounded-full transition-colors",
-            i === active ? "bg-foreground" : "bg-foreground/15"
+            "rounded-full transition-all",
+            vertical
+              ? i === active
+                ? "h-11 w-2.5 bg-foreground"
+                : "size-2.5 bg-foreground/30"
+              : cn("h-1 flex-1", i === active ? "bg-foreground" : "bg-foreground/15")
           )}
         />
       ))}
