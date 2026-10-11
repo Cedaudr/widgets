@@ -1,3 +1,4 @@
+import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import {
   ActivityWidget,
   FeatureWidget,
@@ -6,28 +7,92 @@ import {
   StatWidget,
   WeatherWidget,
 } from "@/components/widgets"
-import { Navigation } from "@/components/Navigation"
-import { createBrowserRouter, RouterProvider, Routes, Route } from "react-router-dom"
+import { RootLayout } from "@/components/layout"
+import { HomePage } from "@/pages/home"
+import { WidgetDetail } from "@/pages/widget-detail"
+import { RouteErrorPage } from "@/pages/not-found"
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: (
-      <div className="min-h-screen bg-background text-foreground">
-        <Navigation />
-        <div className="px-4 py-20">
-          <Routes>
-            <Route path="/" element={<div />} />
-            <Route path="/activity" element={<ActivityWidget />} />
-            <Route path="/weather" element={<WeatherWidget />} />
-            <Route path="/feature" element={<FeatureWidget />} />
-            <Route path="/sales" element={<SalesReportWidget />} />
-            <Route path="/insight" element={<InsightWidget />} />
-            <Route path="/stat" element={<StatWidget />} />
-          </Routes>
-        </div>
-      </div>
-    ),
+    element: <RootLayout />,
+    errorElement: <RouteErrorPage />,
+    children: [
+      { index: true, element: <HomePage /> },
+      {
+        path: "activity",
+        element: (
+          <WidgetDetail
+            eyebrow="Activity widget"
+            title="Daily Writing"
+            description="A focus timer with a progress ring. Start it, pause it, hit your daily goal."
+          >
+            <ActivityWidget />
+          </WidgetDetail>
+        ),
+      },
+      {
+        path: "weather",
+        element: (
+          <WidgetDetail
+            eyebrow="Weather widget"
+            title="Local forecast"
+            description="Current temperature with an hourly forecast strip. Tap a time slot to preview it."
+          >
+            <WeatherWidget />
+          </WidgetDetail>
+        ),
+      },
+      {
+        path: "feature",
+        element: (
+          <WidgetDetail
+            eyebrow="Feature widget"
+            title="Feature showcase"
+            description="A sliding feature card. Use the pager dots to flip through slides."
+          >
+            <FeatureWidget />
+          </WidgetDetail>
+        ),
+      },
+      {
+        path: "sales",
+        element: (
+          <WidgetDetail
+            eyebrow="Sales widget"
+            title="Sales report"
+            description="Summary, monthly and yearly stats, plus a regional breakdown."
+          >
+            <SalesReportWidget />
+          </WidgetDetail>
+        ),
+      },
+      {
+        path: "insight",
+        element: (
+          <WidgetDetail
+            eyebrow="Insight widget"
+            title="Performance insight"
+            description="A headline metric with trend indicator. Page through the insight slides."
+          >
+            <InsightWidget />
+          </WidgetDetail>
+        ),
+      },
+      {
+        path: "stat",
+        element: (
+          <WidgetDetail
+            eyebrow="Stat widget"
+            title="Key stat"
+            description="A single bold percentage with a vertical pager for more slides."
+          >
+            <StatWidget />
+          </WidgetDetail>
+        ),
+      },
+      { path: "*", element: <RouteErrorPage /> },
+    ],
   },
 ])
 
