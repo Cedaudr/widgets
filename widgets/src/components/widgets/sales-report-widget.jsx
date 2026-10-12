@@ -13,7 +13,7 @@ function DotArc() {
   ]
   const span = 205 // degrees covered by each arc
   return (
-    <svg viewBox="-180 -175 360 230" className="w-full">
+    <svg viewBox="-180 -175 360 230" className="mx-auto w-full max-w-50">
       <defs>
         <radialGradient id={id}>
           <stop offset="0%" stopColor="#2563eb" stopOpacity="0.35" />
@@ -50,7 +50,7 @@ function Stat({ icon: Icon, label, value, change, secondary, currency }) {
         <Icon className="size-3.5 text-blue-600" />
         {label}
       </div>
-      <div className="mt-1 text-[32px] leading-tight tabular-nums">
+      <div className="mt-1 text-2xl leading-tight tabular-nums">
         {currency}
         {formatNumber(shown)}
       </div>
@@ -81,31 +81,31 @@ export function SalesReportWidget({
 }) {
   const shownSummary = useCountUp(summary)
   return (
-    <WidgetShell className={className ?? "max-w-114"}>
-      <CardContent className="p-11 pt-12">
-        <h3 className="text-[28px]">{title}</h3>
+    <WidgetShell className={className ?? "w-[344px] h-[461px]"}>
+      <CardContent className="p-6">
+        <h3 className="text-xl">{title}</h3>
 
-        <div className="relative -mx-6 mt-4">
+        <div className="relative mt-2">
           <DotArc />
           <div className="absolute inset-x-0 bottom-0 flex flex-col items-center">
-            <span className="mb-6 grid size-11 place-items-center rounded-full bg-black text-white ring-1 ring-white/10">
-              <Grid2x2 className="size-5 rotate-45" />
+            <span className="mb-3 grid size-8 place-items-center rounded-full bg-black text-white ring-1 ring-white/10">
+              <Grid2x2 className="size-4 rotate-45" />
             </span>
             <span className="text-xs text-muted-foreground">{summaryLabel}</span>
-            <span className="text-[40px] leading-tight tabular-nums">{formatNumber(shownSummary)}</span>
+            <span className="text-[28px] leading-tight tabular-nums">{formatNumber(shownSummary)}</span>
           </div>
         </div>
 
-        <div className="mt-10 grid grid-cols-2 gap-6">
+        <div className="mt-6 grid grid-cols-2 gap-6">
           <Stat icon={SquarePlus} label="Monthly" currency={currency} {...monthly} />
           <Stat icon={ChartPie} label="Yearly" currency={currency} {...yearly} />
         </div>
 
-        <div className="mt-8">
+        <div className="mt-6">
           {regions.map(({ name, value }, i) => (
             <div key={name}>
               {i > 0 && <Separator />}
-              <div className="flex justify-between py-3 text-lg">
+              <div className="flex justify-between py-1.5 text-sm">
                 <span>{name}</span>
                 <span className="font-semibold tracking-tight">{formatNumber(value)}</span>
               </div>

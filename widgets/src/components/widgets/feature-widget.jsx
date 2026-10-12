@@ -5,7 +5,7 @@ import { LOREM, Pager, WidgetShell } from "./widget-shell"
 export function FlameIcon() {
   const id = useId()
   return (
-    <svg viewBox="0 0 140 160" className="size-36 drop-shadow-[0_12px_24px_rgba(26,115,240,0.55)]">
+    <svg viewBox="0 0 140 160" className="size-24 drop-shadow-[0_12px_24px_rgba(26,115,240,0.55)]">
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#1a73f0" />
@@ -43,14 +43,14 @@ export function FeatureWidget({
   const slide = slides[active] ?? slides[0]
 
   return (
-    <WidgetShell className={className ?? "max-w-106"}>
-      <div className="grid h-55.5 place-items-center border-b border-foreground/10 bg-[linear-gradient(to_right,rgb(59_130_246/0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgb(59_130_246/0.08)_1px,transparent_1px)] bg-size-[22px_22px]">
+    <WidgetShell className={className ?? "w-[304px] h-[360px]"}>
+      <div className="grid h-36 shrink-0 place-items-center border-b border-foreground/10 bg-[linear-gradient(to_right,rgb(59_130_246/0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgb(59_130_246/0.08)_1px,transparent_1px)] bg-size-[22px_22px]">
         {icon}
       </div>
-      <CardContent className="px-11 pt-12 pb-11">
-        <h3 className="text-2xl font-medium">{slide.title}</h3>
-        <p className="mt-6 text-xl leading-tight text-muted-foreground">{slide.description}</p>
-        <div className="mt-12">
+      <CardContent className="flex flex-1 flex-col p-6">
+        <h3 className="text-lg font-medium">{slide.title}</h3>
+        <p className="mt-2 text-sm leading-5 text-muted-foreground">{slide.description}</p>
+        <div className="mt-auto">
           <Pager count={slides.length} active={active} onChange={setActive} interval={interval} />
         </div>
       </CardContent>

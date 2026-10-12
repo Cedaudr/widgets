@@ -23,30 +23,30 @@ export function InsightWidget({
   const slide = slides[active] ?? slides[0]
 
   return (
-    <WidgetShell className={className ?? "max-w-114"}>
-      <CardContent className="flex flex-col p-11">
-        <div className="flex items-center gap-3">
-          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-blue-600 text-white">
-            <Zap className="size-4 fill-current" />
+    <WidgetShell className={className ?? "w-[324px] h-[424px]"}>
+      <CardContent className="flex h-full flex-col p-6">
+        <div className="flex items-center gap-2">
+          <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-blue-600 text-white">
+            <Zap className="size-3.5 fill-current" />
           </span>
-          <span className="text-lg">{label}</span>
-          <Badge variant="outline" className="ml-auto h-10 rounded-full px-5 text-lg font-normal">
+          <span className="text-base">{label}</span>
+          <Badge variant="outline" className="ml-auto h-8 rounded-full px-3 text-sm font-normal">
             {location}
           </Badge>
           <MoreButton onClick={onMore} />
         </div>
 
-        <div className="mt-14 flex items-start gap-1">
-          <span className="text-[112px] leading-none font-extralight tracking-tight tabular-nums">
+        <div className="mt-8 flex items-start gap-1">
+          <span className="text-[72px] leading-none font-extralight tracking-tight tabular-nums">
             {slide.value}%
           </span>
-          <TrendingUp className="mt-2 size-10 text-blue-500" strokeWidth={1.5} />
+          <TrendingUp className="mt-1 size-7 text-blue-500" strokeWidth={1.5} />
         </div>
 
-        <h3 className="mt-20 text-2xl font-medium">{slide.title}</h3>
-        <p className="mt-6 text-xl leading-tight text-muted-foreground">{slide.description}</p>
+        <h3 className="mt-auto text-lg font-medium">{slide.title}</h3>
+        <p className="mt-2 text-sm leading-5 text-muted-foreground">{slide.description}</p>
 
-        <div className="mt-16">
+        <div className="mt-8">
           <Pager count={slides.length} active={active} onChange={setActive} interval={interval} />
         </div>
       </CardContent>
