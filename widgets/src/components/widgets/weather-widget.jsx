@@ -9,7 +9,7 @@ import { WidgetShell } from "./widget-shell"
 export function Cloud() {
   const id = useId()
   return (
-    <svg viewBox="0 0 300 170" className="mx-auto w-full max-w-75">
+    <svg viewBox="0 0 300 170" className="mx-auto w-full max-w-50">
       <defs>
         <linearGradient id={`${id}fill`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" className="[stop-color:#fafafa] dark:[stop-color:#2a2a2a]" />
@@ -41,16 +41,16 @@ export function WeatherWidget({
 }) {
   const [selected, setSelected] = useState(0)
   return (
-    <WidgetShell className={className ?? "max-w-113"}>
-      <CardContent className="px-11 py-10">
+    <WidgetShell className={className ?? "w-[344px] h-[333px]"}>
+      <CardContent className="p-6">
         <div className="flex items-start justify-between gap-4">
-          <span className="text-[56px] leading-none">{forecast[selected]?.temp}°</span>
+          <span className="text-5xl leading-none">{forecast[selected]?.temp}°</span>
           <Button
             onClick={onLocationClick}
-            className="h-14 gap-3 rounded-full bg-blue-600 px-7 text-lg font-normal text-white hover:bg-blue-700"
+            className="h-10 gap-2 rounded-full bg-blue-600 px-4 text-sm font-normal text-white hover:bg-blue-700"
           >
-            <span className="grid size-7 place-items-center rounded-md bg-white text-blue-600">
-              <Navigation className="size-4 fill-current" />
+            <span className="grid size-6 place-items-center rounded-md bg-white text-blue-600">
+              <Navigation className="size-3.5 fill-current" />
             </span>
             {location}
           </Button>
@@ -58,14 +58,14 @@ export function WeatherWidget({
 
         <div className="my-6">{icon}</div>
 
-        <div className="flex h-12 items-stretch">
+        <div className="flex h-11 items-stretch">
           {forecast.map(({ time, temp }, i) => (
             <div key={time} className="flex flex-1 items-stretch">
-              {i > 0 && <Separator orientation="vertical" className="mr-4" />}
+              {i > 0 && <Separator orientation="vertical" className="mr-3" />}
               <button
                 onClick={() => setSelected(i)}
                 aria-pressed={selected === i}
-                className="flex flex-col text-left text-xl leading-tight"
+                className="flex flex-col text-left text-base leading-tight"
               >
                 <span className="text-muted-foreground">{time}</span>
                 <span className={cn(selected === i && "text-blue-600")}>{temp}°</span>

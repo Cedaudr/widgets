@@ -22,7 +22,7 @@ export function HomePage() {
         </p>
       </div>
 
-      <div className="mt-10 grid items-start justify-items-center gap-10 md:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-12 flex flex-wrap items-start justify-center gap-x-8 gap-y-12">
         <InsightWidget />
         <SalesReportWidget />
         <FeatureWidget />

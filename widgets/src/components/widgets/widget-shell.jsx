@@ -4,14 +4,15 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-// Gray bezel around a shadcn Card. Colors follow the `.dark` class on <html>.
+// Gray bezel around a shadcn Card. Each widget passes its fixed outer size via className.
+// Colors follow the `.dark` class on <html>.
 export function WidgetShell({ className, children, ...props }) {
   return (
     <div
-      className={cn("w-full rounded-[46px] bg-neutral-200 p-3.5 dark:bg-neutral-800", className)}
+      className={cn("shrink-0 rounded-[36px] bg-neutral-200 p-2 dark:bg-neutral-800", className)}
       {...props}
     >
-      <Card className="relative h-full gap-0 rounded-[36px] border-0 py-0 ring-0 shadow-[0_6px_10px_-4px_rgba(0,0,0,0.45)] dark:bg-[#111]">
+      <Card className="relative h-full gap-0 rounded-[28px] border-0 py-0 ring-0 shadow-[0_6px_10px_-4px_rgba(0,0,0,0.45)] dark:bg-[#111]">
         {children}
       </Card>
     </div>
@@ -22,7 +23,7 @@ export function MoreButton({ onClick }) {
   return (
     <Button
       variant="outline"
-      size="icon-lg"
+      size="icon"
       className="shrink-0 rounded-full"
       aria-label="More options"
       onClick={onClick}
