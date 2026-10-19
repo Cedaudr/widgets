@@ -5,6 +5,7 @@ import {
   ChartPie,
   CloudSun,
   Flame,
+  Headset,
   LayoutGrid,
   Menu,
   TrendingUp,
@@ -22,6 +23,7 @@ export const NAV_LINKS = [
   { to: "/sales", label: "Sales", icon: ChartPie },
   { to: "/insight", label: "Insight", icon: Zap },
   { to: "/stat", label: "Stats", icon: TrendingUp },
+  { to: "/dashboard", label: "Support", icon: Headset },
 ]
 
 function DesktopLink({ to, label, icon: Icon, end }) {
