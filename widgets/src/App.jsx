@@ -11,8 +11,11 @@ import { RootLayout } from "@/components/layout"
 import { HomePage } from "@/pages/home"
 import { WidgetDetail } from "@/pages/widget-detail"
 import { RouteErrorPage } from "@/pages/not-found"
+import { SupportDashboard } from "@/pages/support-dashboard"
 
 const router = createBrowserRouter([
+  // Full-screen app with its own sidebar, so it sits outside RootLayout.
+  { path: "/dashboard", element: <SupportDashboard />, errorElement: <RouteErrorPage /> },
   {
     path: "/",
     element: <RootLayout />,
