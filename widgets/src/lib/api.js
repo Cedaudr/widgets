@@ -1,4 +1,11 @@
+import { fallbackResponse } from "@/lib/fallback-data"
+
 const API_BASE_URL = (import.meta.env.VITE_API_URL || "/api").replace(/\/+$/, "")
+const HAS_REAL_API = Boolean(import.meta.env.VITE_API_URL)
+
+const clone = (value) => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)))
+const fallback = (path, method, body) =>
+  HAS_REAL_API ? undefined : clone(fallbackResponse(path, { method, body }))
 
 export class ApiError extends Error {
   constructor(message, status) {
@@ -17,11 +24,12 @@ function withParams(path, params) {
   return query ? `${path}?${query}` : path
 }
 
-async function request(path, { body, headers, signal, ...options } = {}) {
+async function request(path, { body, headers, signal, method = "GET", ...options } = {}) {
   let response
 
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
       ...options,
       signal,
       headers: {
@@ -33,10 +41,15 @@ async function request(path, { body, headers, signal, ...options } = {}) {
     })
   } catch (error) {
     if (error?.name === "AbortError") throw error
+    const data = fallback(path, method, body)
+    if (data !== undefined) return data
     throw new ApiError("Cannot reach the API. Is the backend running?", 0)
   }
 
   if (!response.ok) {
+    const data = fallback(path, method, body)
+    if (data !== undefined) return data
+
     let detail = `Request failed (${response.status})`
     try {
       const payload = await response.json()
@@ -51,7 +64,15 @@ async function request(path, { body, headers, signal, ...options } = {}) {
   }
 
   if (response.status === 204) return null
-  return response.json()
+
+  try {
+    return await response.json()
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error
+    const data = fallback(path, method, body)
+    if (data !== undefined) return data
+    throw new ApiError("API returned an invalid response", response.status)
+  }
 }
 
 export const api = {
