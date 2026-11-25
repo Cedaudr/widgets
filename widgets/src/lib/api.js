@@ -84,6 +84,8 @@ export const api = {
   getActivityTabs: (signal) => request("/activities/tabs", { signal }),
   getActivities: ({ tab, q, skip = 0, limit = 100 } = {}, signal) =>
     request(withParams("/activities", { tab, q, skip, limit }), { signal }),
+  createActivity: (payload) => request("/activities", { method: "POST", body: payload }),
+  deleteActivity: (id) => request(`/activities/${id}`, { method: "DELETE" }),
 
   getTickets: ({ q, priority, status, sortBy = "id", dir = 1, skip = 0, limit = 50 } = {}, signal) =>
     request(
@@ -92,6 +94,7 @@ export const api = {
     ),
   getBreachRisks: (signal) => request("/tickets/sla/breach-risk", { signal }),
   getTicket: (id, signal) => request(`/tickets/${id}`, { signal }),
+  createTicket: (payload) => request("/tickets", { method: "POST", body: payload }),
   updateTicket: (id, changes) => request(`/tickets/${id}`, { method: "PATCH", body: changes }),
   deleteTicket: (id) => request(`/tickets/${id}`, { method: "DELETE" }),
 

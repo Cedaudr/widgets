@@ -20,7 +20,9 @@ import {
   Menu,
   MessageSquare,
   PanelLeft,
+  Pencil,
   Plug,
+  Plus,
   Repeat2,
   Search,
   Settings,
@@ -80,6 +82,15 @@ const STATUS = {
   Delivered: { icon: Check, tone: "text-emerald-500" },
   "In Progress": { icon: Clock, tone: "text-amber-500" },
 }
+
+const ACTIVITY_TYPES = [
+  "ticket_updated",
+  "client_added",
+  "agent_reassigned",
+  "sla_breach_risk",
+  "knowledge_base",
+  "customer_feedback",
+]
 
 const COLUMNS = [
   { key: "id", label: "Ticket ID", sortKey: "id" },
@@ -476,6 +487,9 @@ export function KpiCards({ data, loading, error, onRetry }) {
 export function LatestUpdates({ className }) {
   const [tab, setTab] = useState("Today")
   const [query, setQuery] = useState("")
+  const [formOpen, setFormOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState(null)
   const debouncedQuery = useDebouncedValue(query)
 
   const tabsResource = useApiResource((signal) => api.getActivityTabs(signal), "activity-tabs", {
@@ -486,12 +500,60 @@ export function LatestUpdates({ className }) {
     `${tab}|${debouncedQuery}`
   )
 
+  const saveActivity = async (payload) => {
+    setBusy(true)
+    setActionError(null)
+    try {
+      await api.createActivity(payload)
+      activities.reload()
+    } catch (error) {
+      setActionError(error.message)
+      throw error
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const removeActivity = async (item) => {
+    if (!window.confirm(`Delete update "${item.title}"?`)) return
+    setBusy(true)
+    setActionError(null)
+    try {
+      await api.deleteActivity(item.id)
+      activities.reload()
+    } catch (error) {
+      setActionError(error.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const items = [...(activities.data?.items ?? [])].sort(compareActivities)
   const tabs = tabsResource.data?.length ? tabsResource.data : ACTIVITY_TAB_FALLBACK
   const total = activities.data?.total ?? items.length
 
   return (
-    <Panel title="Latest Updates" icon={FileChartColumn} className={className} bodyClassName="flex flex-col p-3">
+    <Panel
+      title="Latest Updates"
+      icon={FileChartColumn}
+      className={className}
+      bodyClassName="flex flex-col p-3"
+      action={
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => setFormOpen(true)}
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg border bg-card px-2.5 text-xs font-medium shadow-xs hover:bg-muted disabled:opacity-60"
+        >
+          <Plus className="size-3.5" /> Add update
+        </button>
+      }
+    >
+      {actionError && (
+        <p role="alert" className="mb-2 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-600">
+          {actionError}
+        </p>
+      )}
       <div role="tablist" className="grid grid-cols-3 gap-2">
         {tabs.map((option) => (
           <button
@@ -532,7 +594,7 @@ export function LatestUpdates({ className }) {
         {items.map((item, index) => {
           const Icon = iconFor(item.icon)
           return (
-            <li key={item.id ?? index} className="relative flex gap-3">
+            <li key={item.id ?? index} className="group relative flex gap-3">
               {index < items.length - 1 && (
                 <span className="absolute top-8 -bottom-4 left-3.75 border-l border-dashed" aria-hidden />
               )}
@@ -542,7 +604,19 @@ export function LatestUpdates({ className }) {
               <div className="min-w-0 flex-1">
                 <p className="flex items-baseline justify-between gap-2 text-xs font-medium">
                   {item.title}
-                  <span className="shrink-0 font-normal text-muted-foreground">{item.time}</span>
+                  <span className="flex shrink-0 items-center gap-1 font-normal text-muted-foreground">
+                    {item.time}
+                    {item.id && (
+                      <IconButton
+                        label={`Delete update ${item.title}`}
+                        disabled={busy}
+                        onClick={() => removeActivity(item)}
+                        className="size-6 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-60"
+                      >
+                        <X className="size-3.5" />
+                      </IconButton>
+                    )}
+                  </span>
                 </p>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground [&_b]:font-medium [&_b]:text-foreground">
                   <RichText value={item.body ?? item.bodyText} />
@@ -555,6 +629,9 @@ export function LatestUpdates({ className }) {
           <li className="py-6 text-center text-xs text-muted-foreground">No matching activity.</li>
         )}
       </ol>
+      {formOpen && (
+        <ActivityForm onClose={() => setFormOpen(false)} onSave={saveActivity} />
+      )}
     </Panel>
   )
 }
@@ -571,6 +648,247 @@ function Avatar({ name, initials, className }) {
     >
       {value}
     </span>
+  )
+}
+
+function Modal({ title, onClose, children }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md rounded-2xl border bg-card p-5 shadow-xl">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <IconButton label="Close dialog" onClick={onClose}>
+            <X className="size-4" />
+          </IconButton>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function TicketForm({ ticket, onClose, onSave }) {
+  const [form, setForm] = useState(() => ({
+    subject: ticket?.subject ?? "",
+    priority: ticket?.priority ?? "Medium",
+    agent: ticket?.agent ?? "",
+    status: ticket?.status ?? "In Review",
+    created: ticket?.created ?? new Date().toISOString().slice(0, 10),
+    due: ticket?.due ?? "",
+    dueH: ticket?.dueH ?? 1,
+  }))
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const field = (key, value) => setForm((current) => ({ ...current, [key]: value }))
+
+  const submit = async (event) => {
+    event.preventDefault()
+    setSaving(true)
+    setError(null)
+    const dueH = Number(form.dueH) || 0
+    try {
+      await onSave({ ...form, dueH, due: form.due.trim() || `${dueH}h left` })
+      onClose()
+    } catch (caught) {
+      setError(caught.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal title={ticket ? `Edit ticket #${ticket.id}` : "New ticket"} onClose={onClose}>
+      <form onSubmit={submit} className="mt-4 space-y-3">
+        <label className="block text-xs">
+          <span className="mb-1 block text-muted-foreground">Subject</span>
+          <input
+            required
+            autoFocus
+            value={form.subject}
+            onChange={(event) => field("subject", event.target.value)}
+            className="h-9 w-full rounded-lg border bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          />
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block text-xs">
+            <span className="mb-1 block text-muted-foreground">Priority</span>
+            <select
+              value={form.priority}
+              onChange={(event) => field("priority", event.target.value)}
+              className="h-9 w-full rounded-lg border bg-background px-2 text-sm"
+            >
+              {Object.keys(PRIORITY).map((option) => (
+                <option key={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs">
+            <span className="mb-1 block text-muted-foreground">Status</span>
+            <select
+              value={form.status}
+              onChange={(event) => field("status", event.target.value)}
+              className="h-9 w-full rounded-lg border bg-background px-2 text-sm"
+            >
+              {Object.keys(STATUS).map((option) => (
+                <option key={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <label className="block text-xs">
+          <span className="mb-1 block text-muted-foreground">Assigned to</span>
+          <input
+            required
+            value={form.agent}
+            onChange={(event) => field("agent", event.target.value)}
+            className="h-9 w-full rounded-lg border bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          />
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block text-xs">
+            <span className="mb-1 block text-muted-foreground">Created</span>
+            <input
+              type="date"
+              required
+              value={form.created}
+              onChange={(event) => field("created", event.target.value)}
+              className="h-9 w-full rounded-lg border bg-background px-2 text-sm"
+            />
+          </label>
+          <label className="block text-xs">
+            <span className="mb-1 block text-muted-foreground">SLA hours</span>
+            <input
+              type="number"
+              min="0"
+              required
+              value={form.dueH}
+              onChange={(event) => field("dueH", event.target.value)}
+              className="h-9 w-full rounded-lg border bg-background px-2 text-sm"
+            />
+          </label>
+        </div>
+        <label className="block text-xs">
+          <span className="mb-1 block text-muted-foreground">SLA due label (optional)</span>
+          <input
+            value={form.due}
+            onChange={(event) => field("due", event.target.value)}
+            placeholder={`${Number(form.dueH) || 0}h left`}
+            className="h-9 w-full rounded-lg border bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          />
+        </label>
+        {error && <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-600">{error}</p>}
+        <div className="flex justify-end gap-2 pt-2">
+          <button type="button" onClick={onClose} className="rounded-lg border px-3 py-1.5 text-xs hover:bg-muted">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-lg bg-foreground px-3 py-1.5 text-xs font-medium text-background disabled:opacity-60"
+          >
+            {saving ? "Saving…" : ticket ? "Save changes" : "Create ticket"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+function ActivityForm({ onClose, onSave }) {
+  const [form, setForm] = useState({ type: ACTIVITY_TYPES[0], tab: "Today", title: "", time: "Just now", body: "" })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const field = (key, value) => setForm((current) => ({ ...current, [key]: value }))
+
+  const submit = async (event) => {
+    event.preventDefault()
+    setSaving(true)
+    setError(null)
+    try {
+      await onSave({ ...form, bodyText: form.body })
+      onClose()
+    } catch (caught) {
+      setError(caught.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal title="New update" onClose={onClose}>
+      <form onSubmit={submit} className="mt-4 space-y-3">
+        <label className="block text-xs">
+          <span className="mb-1 block text-muted-foreground">Title</span>
+          <input
+            required
+            autoFocus
+            value={form.title}
+            onChange={(event) => field("title", event.target.value)}
+            className="h-9 w-full rounded-lg border bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          />
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block text-xs">
+            <span className="mb-1 block text-muted-foreground">Type</span>
+            <select
+              value={form.type}
+              onChange={(event) => field("type", event.target.value)}
+              className="h-9 w-full rounded-lg border bg-background px-2 text-sm"
+            >
+              {ACTIVITY_TYPES.map((option) => (
+                <option key={option} value={option}>
+                  {option.replaceAll("_", " ")}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs">
+            <span className="mb-1 block text-muted-foreground">Tab</span>
+            <select
+              value={form.tab}
+              onChange={(event) => field("tab", event.target.value)}
+              className="h-9 w-full rounded-lg border bg-background px-2 text-sm"
+            >
+              {["Today", "Yesterday", "This week"].map((option) => (
+                <option key={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <label className="block text-xs">
+          <span className="mb-1 block text-muted-foreground">Time</span>
+          <input
+            required
+            value={form.time}
+            onChange={(event) => field("time", event.target.value)}
+            className="h-9 w-full rounded-lg border bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          />
+        </label>
+        <label className="block text-xs">
+          <span className="mb-1 block text-muted-foreground">Message</span>
+          <textarea
+            required
+            rows={3}
+            value={form.body}
+            onChange={(event) => field("body", event.target.value)}
+            className="w-full rounded-lg border bg-background px-2.5 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          />
+        </label>
+        {error && <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-600">{error}</p>}
+        <div className="flex justify-end gap-2 pt-2">
+          <button type="button" onClick={onClose} className="rounded-lg border px-3 py-1.5 text-xs hover:bg-muted">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-lg bg-foreground px-3 py-1.5 text-xs font-medium text-background disabled:opacity-60"
+          >
+            {saving ? "Saving…" : "Add update"}
+          </button>
+        </div>
+      </form>
+    </Modal>
   )
 }
 
@@ -618,6 +936,8 @@ export function SlaTable({ title = "SLA Monitoring", mode = "all", fixedPriority
   const [detail, setDetail] = useState(null)
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState(null)
+  const [formOpen, setFormOpen] = useState(false)
+  const [formTicket, setFormTicket] = useState(null)
 
   const tickets = useApiResource(
     (signal) =>
@@ -679,6 +999,22 @@ export function SlaTable({ title = "SLA Monitoring", mode = "all", fixedPriority
     }
   }
 
+  const saveTicket = async (ticket, payload) => {
+    setBusy(true)
+    setActionError(null)
+    try {
+      if (ticket) await api.updateTicket(ticket.id, payload)
+      else await api.createTicket(payload)
+      tickets.reload()
+      onChanged?.()
+    } catch (error) {
+      setActionError(error.message)
+      throw error
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const setDelivered = (ids) =>
     mutate(async () => {
       await Promise.all(ids.map((id) => api.updateTicket(id, { status: "Delivered" })))
@@ -699,6 +1035,18 @@ export function SlaTable({ title = "SLA Monitoring", mode = "all", fixedPriority
       title={title}
       action={
         <>
+          {mode === "all" && (
+            <button
+              type="button"
+              onClick={() => {
+                setFormTicket(null)
+                setFormOpen(true)
+              }}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-foreground px-2.5 text-xs font-medium text-background hover:opacity-90"
+            >
+              <Plus className="size-3.5" /> <span className="hidden sm:inline">New ticket</span>
+            </button>
+          )}
           <label className="relative hidden sm:block">
             <span className="sr-only">Search tickets</span>
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 text-muted-foreground" />
@@ -893,6 +1241,16 @@ export function SlaTable({ title = "SLA Monitoring", mode = "all", fixedPriority
                           View details
                         </MenuItem>
                         <MenuItem
+                          icon={Pencil}
+                          onClick={() => {
+                            setFormTicket(ticket)
+                            setFormOpen(true)
+                            setActionMenuId(null)
+                          }}
+                        >
+                          Edit ticket
+                        </MenuItem>
+                        <MenuItem
                           icon={Check}
                           onClick={() => {
                             setActionMenuId(null)
@@ -935,6 +1293,13 @@ export function SlaTable({ title = "SLA Monitoring", mode = "all", fixedPriority
         </tbody>
       </table>
       {detail && <TicketDetail ticket={detail} onClose={() => setDetail(null)} />}
+      {formOpen && (
+        <TicketForm
+          ticket={formTicket}
+          onClose={() => setFormOpen(false)}
+          onSave={(payload) => saveTicket(formTicket, payload)}
+        />
+      )}
     </Panel>
   )
 }

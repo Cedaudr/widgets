@@ -87,6 +87,15 @@ const WIDGETS = [
   { slug: "stat", eyebrow: "Stat widget", title: "Key stat", description: "A single bold percentage with a vertical pager for more slides.", path: "/stat", icon: "Percent", config: { defaultIndex: 1, interval: 4000, slides: [72, 89, 64].map((value) => ({ value, title: "Figma ipsum component", description: DESCRIPTION })) } },
 ]
 
+const ACTIVITY_STYLE = {
+  ticket_updated: ["Ticket", "text-blue-500"],
+  client_added: ["UserCheck", "text-emerald-500"],
+  agent_reassigned: ["Repeat2", "text-violet-500"],
+  sla_breach_risk: ["TriangleAlert", "text-red-500"],
+  knowledge_base: ["BookOpen", "text-teal-500"],
+  customer_feedback: ["Star", "text-amber-500"],
+}
+
 const state = {
   tickets: [
     { id: 2319, subject: "Payment failed on invoice", priority: "High", agent: "John Doe", status: "In Review", created: "2025-08-18", due: "2h left", dueH: 2 },
@@ -94,6 +103,9 @@ const state = {
     { id: 2321, subject: "Feature request export", priority: "Low", agent: "John Doe", status: "In Progress", created: "2025-08-19", due: "1d left", dueH: 24 },
     { id: 2322, subject: "Contract renewal issue", priority: "Medium", agent: "Michael Wong", status: "In Progress", created: "2025-08-20", due: "9h left", dueH: 9 },
   ],
+  activities: ACTIVITIES.map((item) => ({ ...item })),
+  nextTicketId: 2323,
+  nextActivityId: 14,
   notifications: [
     { id: 1, title: "SLA breach risk", body: "Ticket #2320 \"Login issue\" is due in 1h", read: false, createdAt: "2025-08-20T09:30:00" },
     { id: 2, title: "New client", body: "PT. Alpha Indonesia registered", read: true, createdAt: "2025-08-20T09:15:00" },
@@ -199,7 +211,7 @@ function listActivities(params) {
   const skip = Number(params.get("skip") ?? 0)
   const limit = Number(params.get("limit") ?? 100)
 
-  const filtered = ACTIVITIES.filter(
+  const filtered = state.activities.filter(
     (activity) => (!tab || activity.tab === tab) && (!query || activity.title.toLowerCase().includes(query))
   )
     .sort((a, b) => b.id - a.id)
@@ -221,9 +233,46 @@ export function fallbackResponse(path, { method = "GET", body } = {}) {
 
   if (route === "/activities/tabs") return ["Today", "Yesterday", "This week"]
   if (route === "/activities" && method === "GET") return listActivities(params)
+  if (route === "/activities" && method === "POST") {
+    const [icon, tone] = ACTIVITY_STYLE[body?.type] ?? ["Activity", "text-blue-500"]
+    const activity = {
+      id: state.nextActivityId++,
+      type: body?.type ?? "ticket_updated",
+      tab: body?.tab ?? "Today",
+      icon: body?.icon || icon,
+      tone: body?.tone || tone,
+      title: body?.title ?? "Update",
+      time: body?.time ?? "Just now",
+      body: body?.body ?? "",
+      bodyText: body?.bodyText ?? body?.body ?? "",
+    }
+    state.activities.push(activity)
+    return clone(activity)
+  }
+  const activityMatch = route.match(/^\/activities\/(\d+)$/)
+  if (activityMatch && method === "DELETE") {
+    const index = state.activities.findIndex((item) => item.id === Number(activityMatch[1]))
+    if (index === -1) return undefined
+    state.activities.splice(index, 1)
+    return null
+  }
 
   if (route === "/tickets/sla/breach-risk") return items(state.tickets.filter((ticket) => ticket.dueH <= 2))
   if (route === "/tickets" && method === "GET") return listTickets(params)
+  if (route === "/tickets" && method === "POST") {
+    const ticket = {
+      id: state.nextTicketId++,
+      subject: body?.subject ?? "New ticket",
+      priority: body?.priority ?? "Low",
+      agent: body?.agent ?? "Unassigned",
+      status: body?.status ?? "In Review",
+      created: body?.created ?? new Date().toISOString().slice(0, 10),
+      due: body?.due ?? "—",
+      dueH: Number(body?.dueH) || 0,
+    }
+    state.tickets.push(ticket)
+    return clone(ticket)
+  }
 
   const ticketMatch = route.match(/^\/tickets\/(\d+)$/)
   if (ticketMatch) {
